@@ -55,3 +55,21 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# OSX
+.DS_Store
+
+# venv stuff
+.Python
+[Bb]in
+[Ii]nclude
+[Ll]ib
+[Ll]ocal
+[Ss]cripts
+[Mm]an
+pyvenv.cfg
+pip-selfcheck.json
+
+# Project specific
+private
+output.json
