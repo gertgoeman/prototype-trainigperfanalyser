@@ -96,5 +96,6 @@ calculate_performance(data_frame)
 data_frame["p"] = K1 * data_frame["fitness"] - K2 * data_frame["fatigue"]
 
 # Plot the results.
-data_frame[["fitness","fatigue","p"]].plot()
+data_frame[["fitness"]].plot()
+data_frame[["trimp"]].plot()
 plt.show()
