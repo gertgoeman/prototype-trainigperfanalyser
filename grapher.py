@@ -1,3 +1,4 @@
+import argparse
 import time
 import json
 import pandas as pd
@@ -6,8 +7,7 @@ import dateutil.parser
 import datetime
 import matplotlib.pyplot as plt
 
-COLUMNS = ["id","name","tz0","tz1","tz2","tz3","tz4","tz5","trimp","fitness","fatigue","p"]
-HR_MAX = 192
+COLUMNS = ["id","name","tz0","tz1","tz2","tz3","tz4","tz5","trimp","fitness","fatigue","form"]
 R1 = 60
 R2 = 5
 K1 = 0.0076
@@ -22,8 +22,8 @@ def get_stream(data, stream):
 
     return matches[0]["data"]
 
-def get_zone(value):
-    percentage = (value * 100) / HR_MAX
+def get_zone(value, hr_max):
+    percentage = (value * 100) / hr_max
     if percentage >= 50 and percentage < 60: return 1
     if percentage >= 60 and percentage < 70: return 2
     if percentage >= 70 and percentage < 80: return 3
@@ -31,7 +31,7 @@ def get_zone(value):
     if percentage >= 90: return 5
     return 0
 
-def process_activity(data_frame, activity):
+def process_activity(data_frame, activity, hr_max):
     # Get the time and heartrate streams and store them in a series object.
     time_stream = get_stream(activity, "time")
     hr_stream = get_stream(activity, "heartrate")
@@ -45,7 +45,7 @@ def process_activity(data_frame, activity):
     series = series.interpolate(method = "linear")
 
     # Calculate HR zones.
-    series = series.apply(get_zone)
+    series = series.apply(lambda x: get_zone(x, hr_max))
     grouped = series.groupby(series.values)
     agg = grouped.aggregate(lambda x: len(x) / 60)  # Divide by 60 to get minutes.
 
@@ -71,8 +71,16 @@ def calculate_performance(data_frame):
         data_frame.loc[index, "fitness"] = fitness
         data_frame.loc[index, "fatigue"] = fatigue
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-hr_max", help = "Your maximum heartrate.", type=int, required = True)
+    parser.add_argument("-input", help = "The input file.", required = False, default = "output.json")
+    return parser.parse_args()
+
+args = parse_args()
+
 # Read and parse the json file.
-with open("output.json") as data_file:    
+with open(args.input) as data_file:    
     data = json.load(data_file)
 
 # Create a dataframe to store our data in.
@@ -83,7 +91,7 @@ data_frame = pd.DataFrame(index = pd.DatetimeIndex(date_range), columns = COLUMN
 
 # Process each activity in the json array.
 for activity in data:
-    process_activity(data_frame, activity)
+    process_activity(data_frame, activity, args.hr_max)
 
 # We don't want NaN in the dataframe. It messes up our calculations.
 data_frame.fillna(0, inplace = True)
@@ -93,9 +101,10 @@ data_frame["trimp"] = data_frame["tz1"] + (2 * data_frame["tz2"]) + (3 * data_fr
 
 calculate_performance(data_frame)
 
-data_frame["p"] = K1 * data_frame["fitness"] - K2 * data_frame["fatigue"]
+data_frame["form"] = K1 * data_frame["fitness"] - K2 * data_frame["fatigue"]
 
 # Plot the results.
 data_frame[["fitness"]].plot()
-data_frame[["trimp"]].plot()
+data_frame[["fatigue"]].plot()
+data_frame[["form"]].plot()
 plt.show()
