@@ -68,8 +68,10 @@ def calculate_performance(data_frame):
     for index, row in data_frame.copy().iterrows():
         fitness = fitness * np.exp(-1/R1) + row["trimp"];
         fatigue = fatigue * np.exp(-1/R2) + row["trimp"];
+        performance = fitness * K1 - fatigue * K2
         data_frame.loc[index, "fitness"] = fitness
         data_frame.loc[index, "fatigue"] = fatigue
+        data_frame.loc[index, "performance"] = performance
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -101,10 +103,8 @@ data_frame["trimp"] = data_frame["tz1"] + (2 * data_frame["tz2"]) + (3 * data_fr
 
 calculate_performance(data_frame)
 
-data_frame["form"] = K1 * data_frame["fitness"] - K2 * data_frame["fatigue"]
-
 # Plot the results.
 data_frame[["fitness"]].plot()
 data_frame[["fatigue"]].plot()
-data_frame[["form"]].plot()
+data_frame[["performance"]].plot()
 plt.show()
