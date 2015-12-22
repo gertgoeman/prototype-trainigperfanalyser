@@ -14,13 +14,18 @@ K1 = 0.0076
 K2 = 0.0020
 
 def get_stream(data, stream):
-    streams = data["streams"]
-    matches = list(filter(lambda s: s["type"] == stream, streams))
+    # Try because apparently strava data can be corrupt...
+    try:    
+        streams = data["streams"]
+        matches = list(filter(lambda s: s["type"] == stream, streams))
 
-    if len(matches) == 0:
-        raise ValueError("Unable to find stream %s." % stream)
+        if len(matches) == 0:
+            raise ValueError("Unable to find stream %s." % stream)
 
-    return matches[0]["data"]
+        return matches[0]["data"]
+    except TypeError: 
+        print("TypeError getting stream %s." % stream)
+        return None
 
 def get_zone(value, hr_max):
     percentage = (value * 100) / hr_max
@@ -35,6 +40,10 @@ def process_activity(data_frame, activity, hr_max):
     # Get the time and heartrate streams and store them in a series object.
     time_stream = get_stream(activity, "time")
     hr_stream = get_stream(activity, "heartrate")
+
+    # If one of the streams couldn't be parsed, the activity is skipped.
+    if time_stream is None or hr_stream is None: return
+
     series = pd.Series(hr_stream, index = time_stream)
 
     # Remove duplicates. They break reindexing.
