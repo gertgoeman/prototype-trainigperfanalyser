@@ -15,12 +15,12 @@ K2 = 0.0020
 
 def get_stream(data, stream):
     # Try because apparently strava data can be corrupt...
-    try:    
+    try:
         streams = data["streams"]
         matches = list(filter(lambda s: s["type"] == stream, streams))
 
         if len(matches) == 0:
-            raise ValueError("Unable to find stream %s." % stream)
+            return None # If data is missing for a certain ride, we can simply ignore it.
 
         return matches[0]["data"]
     except TypeError: 
@@ -60,7 +60,7 @@ def process_activity(data_frame, activity, hr_max):
 
     # Put the values in the row.
     activity_date = dateutil.parser.parse(activity["start_date"]).date()
-    row = data_frame.loc[activity_date]
+    row = data_frame.loc[activity_date.strftime('%Y/%m/%d')]
 
     row["id"] = activity["id"]
     row["name"] = activity["name"]
@@ -91,11 +91,11 @@ def parse_args():
 args = parse_args()
 
 # Read and parse the json file.
-with open(args.input) as data_file:    
+with open(args.input) as data_file:
     data = json.load(data_file)
 
 # Create a dataframe to store our data in.
-start_date = dateutil.parser.parse(data[0]["start_date"]).date() # We want to get the date without time.
+start_date = dateutil.parser.parse(data[0]["start_date"]).date()
 end_date = datetime.date.today()
 date_range = pd.date_range(start_date, end_date)
 data_frame = pd.DataFrame(index = pd.DatetimeIndex(date_range), columns = COLUMNS)

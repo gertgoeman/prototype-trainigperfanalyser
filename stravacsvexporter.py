@@ -13,9 +13,8 @@ def to_epoch(orig_datetime):
 
 # Perform a GET requests and returns the result as JSON.
 def get_json(url, access_token, querystr = {}):
-    new_querystr = querystr.copy() # We don't want to update the original querystr.
-    new_querystr["access_token"] = access_token
-    return requests.get(url, new_querystr).json()
+    response = requests.get(url, querystr, headers={"Authorization": f"Bearer {access_token}"})
+    return response.json()
 
 # Gets all Strava activities.
 def get_all_activities(access_token, after):
